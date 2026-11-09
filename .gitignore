@@ -1,0 +1,16 @@
+# Maven
+target/
+*.class
+
+# Eclipse / Spring Tools
+.classpath
+.project
+.settings/
+bin/
+
+# Secrets
+.env
+key.txt
+
+# Temporary files
+*.log
