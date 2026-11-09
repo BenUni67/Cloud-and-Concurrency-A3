@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+	
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="style.css">
+    <title>Speech to Text Application</title>
+</head>
+
+<body>
+    <h1>Speech to Text Application</h1>
+	<p class="subtitle">Record your voice below!</p>
+	
+	<div class="controls">
+	    <div class="button-row">
+	        <button id="startButton">Record</button>
+	        <button id="stopButton" disabled>Stop</button>
+	    </div>
+
+	    <div class="status-section">
+	        <p id="voiceStatus" role="status" aria-live="polite" aria-atomic="true">Ready</p>
+	    </div>
+
+		<div class="transcription-section">
+
+		    <h2>Transcription</h2>
+
+		    <p id="transcriptionText">
+		        Your transcription will appear here.
+		    </p>
+
+		    <details id="transcriptionDetails">
+		        <summary>Transcription details</summary>
+		        <div class="details-content">
+		            <p>
+		                <strong>Model:</strong>
+		                gpt-4o-mini-transcribe
+		            </p>
+		            <p>
+		                <strong>Input tokens:</strong>
+		                <span id="inputTokens">-</span>
+		            </p>
+		            <p>
+		                <strong>Output tokens:</strong>
+		                <span id="outputTokens">-</span>
+		            </p>
+		            <p>
+		                <strong>Total tokens:</strong>
+		                <span id="totalTokens">-</span>
+		            </p>
+		        </div>
+		    </details>
+
+		</div>
+
+	    <audio id="audioPlayback" controls></audio>
+	</div>
+
+	<script src="script.js"></script>	
+</body>
+</html>
