@@ -1,10 +1,10 @@
-package comp3011.assignment1.service;
+package comp3011.subtitleserver.service;
 
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.springframework.stereotype.Service;
 
-import comp3011.assignment1.dto.GlobalStatsResponse;
+import comp3011.subtitleserver.dto.GlobalStatsResponse;
 
 @Service
 public class StatsService {

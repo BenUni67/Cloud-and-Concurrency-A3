@@ -1,4 +1,4 @@
-package comp3011.assignment1.integration;
+package comp3011.subtitleserver.integration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

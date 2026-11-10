@@ -1,11 +1,11 @@
-package comp3011.assignment1.service;
+package comp3011.subtitleserver.service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
 import org.springframework.stereotype.Service;
-import comp3011.assignment1.dto.UptimeResponse;
+import comp3011.subtitleserver.dto.UptimeResponse;
 
 @Service
 public class UptimeService {

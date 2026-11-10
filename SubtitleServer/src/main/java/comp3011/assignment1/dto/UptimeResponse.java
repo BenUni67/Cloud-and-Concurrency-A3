@@ -1,4 +1,4 @@
-package comp3011.assignment1.dto;
+package comp3011.subtitleserver.dto;
 
 // The instant package represents a moment in time / timestamp within code.
 import java.time.Instant;

@@ -1,4 +1,4 @@
-package comp3011.assignment1.controller;
+package comp3011.subtitleserver.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -19,8 +19,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.web.multipart.MultipartFile;
 
-import comp3011.assignment1.dto.TranscriptionResponse;
-import comp3011.assignment1.service.TranscriptionService;
+import comp3011.subtitleserver.dto.TranscriptionResponse;
+import comp3011.subtitleserver.service.TranscriptionService;
 
 @WebMvcTest(TranscriptionController.class)
 class TranscriptionControllerTest {

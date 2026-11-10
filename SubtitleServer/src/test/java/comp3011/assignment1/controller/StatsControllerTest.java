@@ -1,4 +1,4 @@
-package comp3011.assignment1.controller;
+package comp3011.subtitleserver.controller;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -11,8 +11,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import comp3011.assignment1.dto.GlobalStatsResponse;
-import comp3011.assignment1.service.StatsService;
+import comp3011.subtitleserver.dto.GlobalStatsResponse;
+import comp3011.subtitleserver.service.StatsService;
 
 @WebMvcTest(StatsController.class)
 class StatsControllerTest {

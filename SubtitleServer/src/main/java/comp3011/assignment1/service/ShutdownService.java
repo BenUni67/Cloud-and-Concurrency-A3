@@ -1,4 +1,4 @@
-package comp3011.assignment1.service;
+package comp3011.subtitleserver.service;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

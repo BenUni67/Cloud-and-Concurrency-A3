@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>COMP3011</groupId>
-	<artifactId>Assignment1</artifactId>
+	<artifactId>SubtitleServer</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>Assignment1</name>
+	<name>SubtitleServer</name>
 	<description/>
 	<url/>
 	<licenses>

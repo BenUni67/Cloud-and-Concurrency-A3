@@ -1,4 +1,4 @@
-package comp3011.assignment1.dto;
+package comp3011.subtitleserver.dto;
 
 public record ShutdownResponse(String message) {
 }

@@ -1,4 +1,4 @@
-package comp3011.assignment1.controller;
+package comp3011.subtitleserver.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -7,10 +7,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import comp3011.assignment1.dto.ShutdownResponse;
-import comp3011.assignment1.dto.UptimeResponse;
-import comp3011.assignment1.service.UptimeService;
-import comp3011.assignment1.service.ShutdownService;
+import comp3011.subtitleserver.dto.ShutdownResponse;
+import comp3011.subtitleserver.dto.UptimeResponse;
+import comp3011.subtitleserver.service.UptimeService;
+import comp3011.subtitleserver.service.ShutdownService;
 
 @RestController
 @RequestMapping("/api/v1/admin")

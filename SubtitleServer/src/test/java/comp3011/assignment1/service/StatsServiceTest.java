@@ -1,4 +1,4 @@
-package comp3011.assignment1.service;
+package comp3011.subtitleserver.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -11,7 +11,7 @@ import java.util.concurrent.Future;
 
 import org.junit.jupiter.api.Test;
 
-import comp3011.assignment1.dto.GlobalStatsResponse;
+import comp3011.subtitleserver.dto.GlobalStatsResponse;
 
 class StatsServiceTest {
 

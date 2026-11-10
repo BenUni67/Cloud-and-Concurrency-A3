@@ -1,10 +1,10 @@
-package comp3011.assignment1;
+package comp3011.subtitleserver;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class Assignment1ApplicationTests {
+class SubtitleServerApplicationTests {
 
 	@Test
 	void contextLoads() {
