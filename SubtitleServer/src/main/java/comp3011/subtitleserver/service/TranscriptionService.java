@@ -100,23 +100,33 @@ public class TranscriptionService {
     // Creates the body of the request that we send to OpenAi
     // OpenAI needs two things, the ai model and the actual audio file
     private HttpRequest.BodyPublisher createRequestBody(MultipartFile file, String boundary) throws IOException {
-
-    	// Tells Open ai the model, and the boundary
-        String model = "--" + boundary + "\r\n"
+    	
+    	// This section here was created with the assistance of ChatGPT
+        String fields = "--" + boundary + "\r\n"
                 + "Content-Disposition: form-data; name=\"model\"\r\n\r\n"
-                + "gpt-4o-mini-transcribe\r\n";
+                + "whisper-1\r\n"
 
-        // Tells Open ai the audio file, and the filename and that it contains WebM audio
+                + "--" + boundary + "\r\n"
+                + "Content-Disposition: form-data; name=\"response_format\"\r\n\r\n"
+                + "verbose_json\r\n"
+
+                + "--" + boundary + "\r\n"
+                + "Content-Disposition: form-data; name=\"timestamp_granularities[]\"\r\n\r\n"
+                + "word\r\n"
+
+                + "--" + boundary + "\r\n"
+                + "Content-Disposition: form-data; name=\"timestamp_granularities[]\"\r\n\r\n"
+                + "segment\r\n";
+
         String audio = "--" + boundary + "\r\n"
                 + "Content-Disposition: form-data; "
-                + "name=\"file\"; filename=\"recording.webm\"\r\n"
-                + "Content-Type: audio/webm\r\n\r\n";
+                + "name=\"file\"; filename=\"audio.wav\"\r\n"
+                + "Content-Type: audio/wav\r\n\r\n";
 
         String end = "\r\n--" + boundary + "--\r\n";
-        
-        // Joins the parts together for correct request 
+
         return HttpRequest.BodyPublishers.concat(
-                HttpRequest.BodyPublishers.ofString(model),
+                HttpRequest.BodyPublishers.ofString(fields),
                 HttpRequest.BodyPublishers.ofString(audio),
                 HttpRequest.BodyPublishers.ofByteArray(file.getBytes()),
                 HttpRequest.BodyPublishers.ofString(end)
