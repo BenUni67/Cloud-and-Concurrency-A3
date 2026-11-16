@@ -35,7 +35,7 @@ public class VideoPlayerController {
     public VideoPlayerController(
             boolean audioEnabled,
             BiConsumer<Integer, Integer> videoSizeChangedHandler,
-            List<FrameProcessor> frameProcessors) {
+            List<FrameProcessor> frameProcessors, boolean subtitlesInitiallyEnabled) {
         this.view = new VideoPlayerView();
         this.videoSizeChangedHandler = videoSizeChangedHandler;
         model = new VideoPlayerModel(
@@ -45,7 +45,8 @@ public class VideoPlayerController {
                 this::onStatusChanged,
                 this::onPlaybackStateChanged,
                 this::onAudioOutputStateChanged,
-                frameProcessors);
+                frameProcessors,
+                subtitlesInitiallyEnabled);
 
         view.getStartOverButton().setOnAction(_ -> startOver());
         view.getBackFiveButton().setOnAction(_ -> backFiveSeconds());
@@ -53,6 +54,8 @@ public class VideoPlayerController {
         view.getForwardFiveButton().setOnAction(_ -> forwardFiveSeconds());
         view.getStopButton().setOnAction(_ -> stopAndExit());
         view.getAudioButton().setOnAction(_ -> toggleAudioOutput());
+        view.getSubtitleButton().setOnAction(_ -> toggleSubtitles());
+        view.showSubtitlesEnabled(model.isSubtitlesEnabled());        
         view.showAudioEnabled(model.isAudioOutputEnabled());
     }
 
@@ -76,6 +79,9 @@ public class VideoPlayerController {
             } else if (event.getCode() == KeyCode.A) {
                 toggleAudioOutput();
                 event.consume();
+            } else if (event.getCode() == KeyCode.S) {
+            	toggleSubtitles();
+            	event.consume();
             }
         });
     }
@@ -113,6 +119,11 @@ public class VideoPlayerController {
         model.toggleAudioOutput();
     }
 
+    private void toggleSubtitles() {
+    	boolean enabled = model.toggleSubtitles();
+    	view.showSubtitlesEnabled(enabled);
+    }
+    
     private void stopAndExit() {
         model.stopPlayback();
         javafx.application.Platform.exit();

@@ -34,6 +34,8 @@ import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.scene.image.Image;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * The model part of the video player model-view-controller architecture.
  *
@@ -81,6 +83,9 @@ public class VideoPlayerModel {
     private final Consumer<String> statusChangedHandler;
     private final BiConsumer<Boolean, Boolean> playbackStateChangedHandler;
     private final Consumer<Boolean> audioOutputStateChangedHandler;
+    
+    // Stores whether subtitles are enabled
+    private final AtomicBoolean subtitlesEnabled;
 
     // This is the critical wiring that allows the framework (JavaFX) to call
     // into our model logic every time it goes around its event loop. Every GUI
@@ -127,7 +132,8 @@ public class VideoPlayerModel {
             Consumer<String> statusChangedHandler,
             BiConsumer<Boolean, Boolean> playbackStateChangedHandler,
             Consumer<Boolean> audioOutputStateChangedHandler,
-            List<FrameProcessor> frameProcessors) {
+            List<FrameProcessor> frameProcessors,
+            boolean subtitlesInitiallyEnabled) {
         audioOutputEnabled = audioEnabled;
         this.videoSizeChangedHandler = videoSizeChangedHandler;
         this.frameReadyHandler = frameReadyHandler;
@@ -135,6 +141,7 @@ public class VideoPlayerModel {
         this.playbackStateChangedHandler = playbackStateChangedHandler;
         this.audioOutputStateChangedHandler = audioOutputStateChangedHandler;
         this.frameProcessors = new ArrayList<>(frameProcessors);
+        this.subtitlesEnabled = new AtomicBoolean(subtitlesInitiallyEnabled);
         
         // gives each effect type a unique index
         // this code was written with the assistance of AI, as per what is allowed in the assignment
@@ -149,6 +156,17 @@ public class VideoPlayerModel {
         	processor.setInstanceIndex(index);
         	instanceCounts.put(type, index + 1);
         }
+    }
+    
+    public boolean isSubtitlesEnabled() {
+        return subtitlesEnabled.get();
+    }
+
+    // toggles subtitles and returns new state
+    public boolean toggleSubtitles() {
+        boolean enabled = !subtitlesEnabled.get();
+        subtitlesEnabled.set(enabled);
+        return enabled;
     }
 
     public void play(File file) {

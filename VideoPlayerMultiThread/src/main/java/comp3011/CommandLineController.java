@@ -29,6 +29,7 @@ public class CommandLineController {
     private boolean helpRequested;
     private boolean audioRequested;
     private boolean maximiseRequested;
+    private boolean subtitleRequested;
     private Integer displayId;
     private File videoFile;
     private String errorMessage;
@@ -69,6 +70,10 @@ public class CommandLineController {
     public boolean isMaximiseRequested() {
         return maximiseRequested;
     }
+    
+    public boolean isSubtitleRequested() {
+    	return subtitleRequested;
+    }
 
     public boolean shouldLaunchApplication() {
         return errorMessage == null && videoFile != null;
@@ -102,6 +107,9 @@ public class CommandLineController {
                     case "--mottle-frames" -> frameProcessors.add(new FrameMottler());
                     case "--bleed-frames" -> frameProcessors.add(new FrameBleeder());
                     case "--pepper-frames" -> frameProcessors.add(new FramePepperer());
+                    
+                    // subtitles
+                    case "--subtitle-frames" -> subtitleRequested = true;
                     default -> errorMessage = "Unknown option: " + arg;
                 }
 
@@ -128,6 +136,9 @@ public class CommandLineController {
                         case 'm' -> frameProcessors.add(new FrameMottler());
                         case 'b' -> frameProcessors.add(new FrameBleeder());
                         case 'p' -> frameProcessors.add(new FramePepperer());
+                        
+                        // subtitles
+                        case 'S' -> subtitleRequested = true;
                         default -> errorMessage = "Unknown option: -" + option;
                     }
                 }
@@ -186,6 +197,8 @@ public class CommandLineController {
         System.out.println("  -b, --bleed-frames     Bleed light into frames");
         System.out.println("  -p, --pepper-frames    Pepper frames with dark spots/blotches");
         System.out.println();
+        System.out.println("Subtitles");
+        System.out.println("  -S, --subtitle-frames  Add speech-to-text subtitles to frames");
         System.out.println("Frame processors are applied in command-line order and may be repeated.");
         System.out.println("Example: -nssnfwyvdjmbp numbers, scratches twice, numbers again, flickers,");
         System.out.println("converts, warms, vignettes, dusts, jitters, mottles, bleeds, then peppers.");
