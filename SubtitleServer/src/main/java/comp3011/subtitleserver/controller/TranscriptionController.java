@@ -9,11 +9,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import comp3011.subtitleserver.dto.TranscriptionResponse;
 import comp3011.subtitleserver.service.TranscriptionService;
+import tools.jackson.databind.JsonNode;
 
 @RestController
-@RequestMapping("/api/v1/transcriptions")
+@RequestMapping("/api/v1/subtitles")
 public class TranscriptionController {
 
     // Sends the audio to OpenAi
@@ -25,14 +25,11 @@ public class TranscriptionController {
         this.transcriptionService = transcriptionService;
     }
 
-
-
      // Accepts a POST request containing an uploaded file
-
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public CompletableFuture<TranscriptionResponse> transcribe(@RequestParam MultipartFile file) throws IOException {
+    public CompletableFuture<JsonNode> transcribe(@RequestParam MultipartFile file) throws IOException {
 
-    	// Gives audio file to TranscriptionService which sends it to OpenAi and returns a transcription
+    	// Gives audio file to TranscriptionService
         return transcriptionService.transcribe(file);
     }
 }

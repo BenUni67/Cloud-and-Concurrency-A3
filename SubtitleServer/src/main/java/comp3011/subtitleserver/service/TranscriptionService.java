@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import comp3011.subtitleserver.dto.TranscriptionResponse;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -42,58 +41,39 @@ public class TranscriptionService {
         // Creating HTTP client that sends request to OpenAi
         this.httpClient = HttpClient.newHttpClient();
     }
-
-    public CompletableFuture<TranscriptionResponse> transcribe(MultipartFile file) throws IOException {
-    	
-    	// The multipart request contains multiple parts of data, including model name and audio file in this case
-    	// The boundary is used to seperate the parts of the request to OpenAI
+    
+    // Will send audio to whisper and return the subtitle text
+    public CompletableFuture<JsonNode> transcribe(MultipartFile file) throws IOException {
     	
         String boundary = "----SubtitleServerBoundary";
         
-        // Request that HTTP sends to OpenAi
         HttpRequest request = HttpRequest.newBuilder()
-        		// OpenAI speech to text endpoint
         		.uri(URI.create(transcriptionUrl))
                 .header("Authorization", "Bearer " + apiKey)
-                // Tells OpenAi we are sending multipart data, and that boundary seperates each part
                 .header("Content-Type", "multipart/form-data; boundary=" + boundary)
                 .POST(createRequestBody(file, boundary))
                 .build();
-        
-        long startTime = System.currentTimeMillis();
-        System.out.println("Sending audio to openAI");
 
         // Sends the request asynchronously
         // Means that java doesn't sit and block the server thread while waiting for a reply
         return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(response -> {
-
-        	long timeTaken = System.currentTimeMillis() - startTime;
-            System.out.println(
-                    "OpenAI responded with status "
-                    + response.statusCode()
-                    + " after "
-                    + timeTaken
-                    + "ms"
-            );
         	
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new RuntimeException("OpenAI request failed: " + response.statusCode());
-            }
-            try {
-            	// Reads the OpenAi response
-                JsonNode json = jsonMapper.readTree(response.body());
-                String text = json.path("text").asString();
-                long inputTokens = json.path("usage").path("input_tokens").asLong();
-                long outputTokens = json.path("usage").path("output_tokens").asLong();
-                long totalTokens = json.path("usage").path("total_tokens").asLong();
-                
-                // Add the token usage to stats
-                statsService.addTokenStats(inputTokens, outputTokens);
-                return new TranscriptionResponse(text, inputTokens, outputTokens, totalTokens);
-
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+        	if (response.statusCode() < 200 || response.statusCode() >= 300) {
+        		throw new RuntimeException("Whisper request failed: " + response.statusCode());
+        	}
+        	
+        	try {
+        		// Convert whisper response into a JSOn file
+        		JsonNode jsonFile = jsonMapper.readTree(response.body());
+        		
+        		// Track audio length
+        		double seconds = jsonFile.path("usage").path("seconds").asDouble(json.path("duration").asDouble(0));
+        		statsService.addTranscriptionSeconds(seconds);
+        		return jsonFile;
+        	} catch (Exception e) {
+        		throw new RuntimeException(e);
+        	}
+        	
         });
     }
 
