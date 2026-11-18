@@ -42,6 +42,7 @@ public class VideoPlayerController {
                 audioEnabled,
                 this::onVideoSizeChanged,
                 this::onFrameReady,
+                this::onSubtitleTextChanged,
                 this::onStatusChanged,
                 this::onPlaybackStateChanged,
                 this::onAudioOutputStateChanged,
@@ -122,6 +123,10 @@ public class VideoPlayerController {
     private void toggleSubtitles() {
     	boolean enabled = model.toggleSubtitles();
     	view.showSubtitlesEnabled(enabled);
+    }
+    
+    private void onSubtitleTextChanged(String text) {
+    	view.showSubtitleText(text);
     }
     
     private void stopAndExit() {

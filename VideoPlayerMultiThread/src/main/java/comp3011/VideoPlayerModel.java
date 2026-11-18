@@ -86,6 +86,9 @@ public class VideoPlayerModel {
     
     // Stores whether subtitles are enabled
     private final AtomicBoolean subtitlesEnabled;
+    
+    private final Consumer<String> subtitleTextChangedHandler;
+    private List<SubtitleInstance> subtitleInstances = List.of();
 
     // This is the critical wiring that allows the framework (JavaFX) to call
     // into our model logic every time it goes around its event loop. Every GUI
@@ -129,6 +132,7 @@ public class VideoPlayerModel {
             boolean audioEnabled,
             BiConsumer<Integer, Integer> videoSizeChangedHandler,
             Consumer<Image> frameReadyHandler,
+            Consumer<String> subtitleTextChangedHandler,
             Consumer<String> statusChangedHandler,
             BiConsumer<Boolean, Boolean> playbackStateChangedHandler,
             Consumer<Boolean> audioOutputStateChangedHandler,
@@ -137,6 +141,7 @@ public class VideoPlayerModel {
         audioOutputEnabled = audioEnabled;
         this.videoSizeChangedHandler = videoSizeChangedHandler;
         this.frameReadyHandler = frameReadyHandler;
+        this.subtitleTextChangedHandler = subtitleTextChangedHandler;
         this.statusChangedHandler = statusChangedHandler;
         this.playbackStateChangedHandler = playbackStateChangedHandler;
         this.audioOutputStateChangedHandler = audioOutputStateChangedHandler;
@@ -161,15 +166,39 @@ public class VideoPlayerModel {
     public boolean isSubtitlesEnabled() {
         return subtitlesEnabled.get();
     }
+    
+    // Stores the subtitles that have been received for current vid
+    public void setSubtitleInstances(List<SubtitleInstance> instances) {
+    	subtitleInstances = List.copyOf(instances);
+    	updateSubtitleText();
+    }
+    
+    // Displays the subtitles that match the current time
+    private void updateSubtitleText() {
+        String text = "";
+
+        if (subtitlesEnabled.get() && playbackOpen) {
+            for (SubtitleInstance instance : subtitleInstances) {
+                if (instance.isVisibleAt(currentTimestampUs)) {
+                    text = instance.text();
+                    break;
+                }
+            }
+        }
+
+        subtitleTextChangedHandler.accept(text);
+    }
 
     // toggles subtitles and returns new state
     public boolean toggleSubtitles() {
         boolean enabled = !subtitlesEnabled.get();
         subtitlesEnabled.set(enabled);
+        updateSubtitleText();
         return enabled;
     }
 
     public void play(File file) {
+    	subtitleInstances = List.of();
         videoFile = file;
         videoDurationUs = NO_SEEK_REQUEST;
         videoFrameDurationUs = 0;
@@ -286,6 +315,7 @@ public class VideoPlayerModel {
             openPlaybackResources(startTimestampUs);
             resetPlaybackClock(currentTimestampUs);
             playbackOpen = true;
+            updateSubtitleText();
             playbackTimer.start();
             prepareNextFrame();
             notifyPlaybackStateChanged();
@@ -581,6 +611,7 @@ public class VideoPlayerModel {
         }
 
         notifyFrameReady(frame.image());
+        updateSubtitleText();
     }
 
     private void queueAudio(long timestampUs, Frame frame) {

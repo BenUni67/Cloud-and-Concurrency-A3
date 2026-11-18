@@ -30,6 +30,10 @@ import javafx.scene.shape.Line;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.shape.StrokeLineCap;
+import javafx.geometry.Pos;
+import javafx.scene.shape.StrokeType;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextAlignment;
 
 /**
  * The view part of the video player model-view-controller architecture.
@@ -46,6 +50,7 @@ public class VideoPlayerView {
     private static final int ICON_SIZE = 28;
 
     private final ImageView imageView = new ImageView();
+    private final Text subtitleText = new Text();
     private final Label statusLabel = new Label("No video loaded");
     private final Label tooltipLabel = new Label();
     private final Pane tooltipLayer = new Pane();
@@ -62,8 +67,26 @@ public class VideoPlayerView {
     public VideoPlayerView() {
         imageView.setPreserveRatio(true);
         imageView.setSmooth(false);
+        
+        // Subtitle text in the video
+        videoPane = new StackPane(imageView, subtitleText);
+        
+        // Subtitle appearance configuration
+        // This was done with the help of ChatGPT
+        subtitleText.setFill(Color.WHITE);
+        subtitleText.setStroke(Color.BLACK);
+        subtitleText.setStrokeWidth(2);
+        subtitleText.setStrokeType(StrokeType.OUTSIDE);
+        subtitleText.setStyle("-fx-font-family: Arial;" + "-fx-font-size: 24px;" + "-fx-font-weight: bold;");
+        subtitleText.setTextAlignment(TextAlignment.CENTER);
+        subtitleText.setMouseTransparent(true);
 
-        videoPane = new StackPane(imageView);
+        StackPane.setAlignment(subtitleText, Pos.BOTTOM_CENTER);
+        StackPane.setMargin(subtitleText, new Insets(0, 20, 30, 20));
+
+        subtitleText.wrappingWidthProperty().bind(
+                videoPane.widthProperty().subtract(40)
+        );
         videoPane.setStyle("-fx-background-color: black;");
         videoPane.setMinSize(0, 0);
         videoPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
@@ -144,6 +167,10 @@ public class VideoPlayerView {
 
     public void setImage(Image image) {
         imageView.setImage(image);
+    }
+    
+    public void showSubtitleText(String text) {
+    	subtitleText.setText(text == null ? "" : text);
     }
 
     public void setVideoDisplaySize(double width, double height) {
