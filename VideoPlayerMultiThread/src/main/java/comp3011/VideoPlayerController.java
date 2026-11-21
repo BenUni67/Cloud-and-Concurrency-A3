@@ -95,10 +95,6 @@ public class VideoPlayerController {
         return view;
     }
 
-    public void play(File file) {
-        view.setPlaybackControlsDisabled(false);
-        model.play(file);
-    }
     
     public void play(File file) {
         view.setPlaybackControlsDisabled(false);

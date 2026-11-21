@@ -142,8 +142,8 @@ public class SubtitleClient implements AutoCloseable {
                     ))
                     .build();
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
+            HttpResponse<String> response = sendWithRetry(request);
+            
             if (response.statusCode() != 200) {
                 throw new RuntimeException("Subtitle server returned HTTP " + response.statusCode());
             }
@@ -161,38 +161,104 @@ public class SubtitleClient implements AutoCloseable {
             onError.accept(e.getMessage());
         }
     }
+    
+    // retries temporary connection failures without stopping playback
+    private HttpResponse<String> sendWithRetry(HttpRequest request) throws InterruptedException {
+        while (!Thread.currentThread().isInterrupted()) {
+            try {
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+                if (response.statusCode() == 200) {
+                    return response;
+                }
+                int status = response.statusCode();
+                // dont retry invalid requests or auth errors
+                if (status >= 400 && status < 500 && status != 429) {
+                    throw new IllegalStateException("Subtitle server returned HTTP " + status);
+                }
+                System.err.println("Subtitle server unavailable (HTTP " + status + "), retrying...");
+            } catch (java.io.IOException e) {
+                System.err.println("Subtitle connection failed, retrying: " + e.getMessage());
+            }
+            Thread.sleep(2000);
+        }
+        throw new InterruptedException("Subtitle client stopped.");
+    }
 
     // converts whisper segment timestamps into video timestamps
     private List<SubtitleInstance> parseinstances(JsonNode json, long offsetUs) {
-        List<SubtitleInstance> instances = new ArrayList<>();
+        List<SubtitleInstance> timedWords = new ArrayList<>();
         JsonNode segments = json.path("segments");
+        JsonNode words = json.path("words");
 
         if (!segments.isArray()) {
-            throw new IllegalArgumentException("Subtitle response has no segments array.");
+            throw new IllegalArgumentException("Subtitle response has no segments.");
         }
 
         for (JsonNode segment : segments) {
-        	// A3 silence filtering requirement
             double noSpeechProb = segment.path("no_speech_prob").asDouble(0);
             double avgLogProb = segment.path("avg_logprob").asDouble(0);
 
+            // ignore segments likely to contain no speech
             if (noSpeechProb > 0.6 && avgLogProb < -1.0) {
                 continue;
             }
 
-            String text = segment.path("text").asText("").trim();
-            if (text.isEmpty()) {
-                continue;
+            double segmentStart = segment.path("start").asDouble();
+            double segmentEnd = segment.path("end").asDouble();
+
+            boolean foundWords = false;
+
+            if (words.isArray()) {
+                for (JsonNode word : words) {
+
+                    double wordStart = word.path("start").asDouble();
+                    double wordEnd = word.path("end").asDouble();
+
+                    double midpoint = (wordStart + wordEnd) / 2.0;
+
+                    // associate the word with this speech segment
+                    if (midpoint < segmentStart || midpoint >= segmentEnd) {
+                        continue;
+                    }
+
+                    String value = word.path("word").asText("").trim();
+
+                    if (value.isEmpty() || wordEnd <= wordStart) {
+                        continue;
+                    }
+
+                    timedWords.add(new SubtitleInstance(offsetUs + Math.round(wordStart * 1_000_000), offsetUs + Math.round(wordEnd * 1_000_000), value));
+
+                    foundWords = true;
+                }
             }
 
-            long startUs = offsetUs + Math.round(segment.path("start").asDouble() * 1_000_000);
-            long endUs = offsetUs + Math.round(segment.path("end").asDouble() * 1_000_000);
-            if (endUs <= startUs) {
-                continue;
+            // fall back to aprrox word timing if Whisper returns
+            // a segment but no individual words for it
+            if (!foundWords) {
+                String text = segment.path("text").asText("").trim();
+                if (text.isEmpty()) {
+                    continue;
+                }
+                
+                String[] pieces = text.split("\\s+");
+
+                long start = offsetUs + Math.round(segmentStart * 1_000_000);
+                long end = offsetUs + Math.round(segmentEnd * 1_000_000);
+
+                if (end <= start) {
+                    continue;
+                }
+
+                for (int i = 0; i < pieces.length; i++) {
+                    long wordStart = start + (end - start) * i / pieces.length;
+                    long wordEnd = start + (end - start) * (i + 1) / pieces.length;
+                    timedWords.add(new SubtitleInstance(wordStart, wordEnd, pieces[i]));
+                }
             }
-            instances.add(new SubtitleInstance(startUs, endUs, text));
         }
-        return instances;
+        return SubtitleFormatter.format(timedWords);
     }
 
     @Override
