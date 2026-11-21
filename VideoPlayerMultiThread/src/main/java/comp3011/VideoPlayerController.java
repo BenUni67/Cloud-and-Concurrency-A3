@@ -11,9 +11,11 @@
 package comp3011;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 
+import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
@@ -30,6 +32,8 @@ import javafx.scene.input.KeyEvent;
 public class VideoPlayerController {
     private final VideoPlayerModel model;
     private final VideoPlayerView view;
+    private final SubtitleClient subtitleClient = new SubtitleClient();
+    private final List<SubtitleInstance> loadedSubtitles = new ArrayList<>();
     private final BiConsumer<Integer, Integer> videoSizeChangedHandler;
 
     public VideoPlayerController(
@@ -95,8 +99,25 @@ public class VideoPlayerController {
         view.setPlaybackControlsDisabled(false);
         model.play(file);
     }
+    
+    public void play(File file) {
+        view.setPlaybackControlsDisabled(false);
+        loadedSubtitles.clear();
+        model.play(file);
+
+        // transcription happens separately in a background thread
+        subtitleClient.start(file,
+                instances -> Platform.runLater(() -> {
+                   loadedSubtitles.addAll(instances);
+                    model.setSubtitleInstances(loadedSubtitles);
+                }),
+                // report errors without stopping the video
+                error -> System.err.println("Subtitle error: " + error)
+        );
+    }
 
     public void shutdown() {
+    	subtitleClient.close();
         model.shutdown();
     }
 
