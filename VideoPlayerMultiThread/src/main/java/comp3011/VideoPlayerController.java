@@ -15,6 +15,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.Comparator;
+
 import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
@@ -34,6 +38,9 @@ public class VideoPlayerController {
     private final VideoPlayerView view;
     private final SubtitleClient subtitleClient = new SubtitleClient();
     private final List<SubtitleInstance> loadedSubtitles = new ArrayList<>();
+    private final Set<SubtitleInstance> seenSubtitles = new HashSet<>();
+    private File subtitleVideoFile;
+    private long subtitleRequestId = 0;
     private final BiConsumer<Integer, Integer> videoSizeChangedHandler;
 
     public VideoPlayerController(
@@ -95,34 +102,30 @@ public class VideoPlayerController {
         return view;
     }
 
-    
     public void play(File file) {
-        view.setPlaybackControlsDisabled(false);
+        subtitleVideoFile = file;
         loadedSubtitles.clear();
-        model.play(file);
+        seenSubtitles.clear();
 
-        // transcription happens separately in a background thread
-        subtitleClient.start(file,
-                instances -> Platform.runLater(() -> {
-                   loadedSubtitles.addAll(instances);
-                    model.setSubtitleInstances(loadedSubtitles);
-                }),
-                // report errors without stopping the video
-                error -> System.err.println("Subtitle error: " + error)
-        );
+        view.setPlaybackControlsDisabled(false);
+        model.play(file);
+        requestSubtitlesAt(0);
     }
 
     public void shutdown() {
+    	subtitleRequestId++;
     	subtitleClient.close();
         model.shutdown();
     }
 
     private void startOver() {
         model.startOver();
+        requestSubtitlesAt(model.getCurrentTimestampUs());
     }
 
     private void backFiveSeconds() {
         model.backFiveSeconds();
+        requestSubtitlesAt(model.getCurrentTimestampUs());
     }
 
     private void togglePause() {
@@ -131,6 +134,7 @@ public class VideoPlayerController {
 
     private void forwardFiveSeconds() {
         model.forwardFiveSeconds();
+        requestSubtitlesAt(model.getCurrentTimestampUs());
     }
 
     private void toggleAudioOutput() {
@@ -173,5 +177,41 @@ public class VideoPlayerController {
 
     private void onAudioOutputStateChanged(boolean audioOutputEnabled) {
         view.showAudioEnabled(audioOutputEnabled);
+    }
+    
+    private void requestSubtitlesAt(long positionUs) {
+        if (subtitleVideoFile == null) {
+            return;
+        }
+
+        // each new request invalidates callbacks from an old request
+        long requestId = ++subtitleRequestId;
+
+        subtitleClient.startAt(subtitleVideoFile, positionUs, instances -> Platform.runLater(() -> {
+
+        	// ignore results from a previous seek or video
+            if (requestId != subtitleRequestId) {
+                return;
+            }
+
+            boolean changed = false;
+
+            // keep the previously loaded subtitles and avoid any dupliate
+            for (SubtitleInstance instance : instances) {
+                if (seenSubtitles.add(instance)) {
+                    loadedSubtitles.add(instance);
+                    changed = true;
+                }
+            }
+
+            if (changed) {
+                loadedSubtitles.sort(Comparator.comparingLong(SubtitleInstance::startUs));
+                model.setSubtitleInstances(loadedSubtitles);
+            }
+        }), error -> Platform.runLater(() -> {
+            if (requestId == subtitleRequestId) {
+                System.err.println("Subtitle error: " + error);
+            }
+        }));
     }
 }

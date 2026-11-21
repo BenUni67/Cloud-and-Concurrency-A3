@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+import java.util.concurrent.Future;
 
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.FFmpegFrameRecorder;
@@ -34,24 +35,47 @@ public class SubtitleClient implements AutoCloseable {
     private final ObjectMapper mapper = new ObjectMapper();
 
     private final ExecutorService executor =
-            Executors.newSingleThreadExecutor(r -> {
+            Executors.newCachedThreadPool(r -> {
                 Thread thread = new Thread(r, "subtitle-client");
                 thread.setDaemon(true);
                 return thread;
             });
+    private Future<?> runningTask;
 
     // starts transcription without blocking the videos playback
-    public void start(File video, Consumer<List<SubtitleInstance>> oninstances, Consumer<String> onError) {
-        executor.submit(() -> processAudio(video, oninstances, onError));
+    public void start(File video, Consumer<List<SubtitleInstance>> onInstances, Consumer<String> onError) {
+    	startAt(video, 0, onInstances, onError);
+    };
+    
+    // start transcribing from a chosen video position
+    public synchronized void startAt(File video, long positionUs, Consumer<List<SubtitleInstance>> onInstances,Consumer<String> onError) {
+        cancel();
+        long startUs = Math.max(0, positionUs);
+        runningTask = executor.submit(() ->
+                processAudio(video, startUs, onInstances, onError)
+        );
     }
 
-    private void processAudio(File video, Consumer<List<SubtitleInstance>> oninstances, Consumer<String> onError) {
+    // cancel any outstanding transcription
+    public synchronized void cancel() {
+        if (runningTask != null) {
+            runningTask.cancel(true);
+            runningTask = null;
+        }
+    }
+
+    private void processAudio(File video, long startUs, Consumer<List<SubtitleInstance>> onInstances, Consumer<String> onError) {
         Path tempFile = null;
         FFmpegFrameRecorder recorder = null;
 
         try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(video)) {
             grabber.setSampleMode(FrameGrabber.SampleMode.SHORT);
             grabber.start();
+            
+            // move subtitle decoder to the requested playback position
+            if (startUs > 0) {
+            	grabber.setTimestamp(startUs);
+            }
 
             if (!grabber.hasAudio()) {
                 onError.accept("Video contains no audio.");
@@ -69,13 +93,18 @@ public class SubtitleClient implements AutoCloseable {
 
                     long timestampUs = Math.max(0, grabber.getTimestamp());
 
+                    // ignore audio before our seek position
+                    if (timestampUs < startUs) {
+                    	continue;
+                    }
+                    
                     // a finished chunk is now able to be transcribed
                     if (recorder != null && timestampUs - chunkStartUs >= CHUNK_DURATION_US) {
                         recorder.stop();
                         recorder.close();
                         recorder = null;
 
-                        sendChunk(tempFile, chunkStartUs, oninstances, onError);
+                        sendChunk(tempFile, chunkStartUs, onInstances, onError);
                         Files.deleteIfExists(tempFile);
                         tempFile = null;
                     }
@@ -103,7 +132,7 @@ public class SubtitleClient implements AutoCloseable {
                     recorder.close();
                     recorder = null;
 
-                    sendChunk(tempFile, chunkStartUs, oninstances, onError);
+                    sendChunk(tempFile, chunkStartUs, onInstances, onError);
                 }
 
             } finally {
@@ -262,7 +291,8 @@ public class SubtitleClient implements AutoCloseable {
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
+    	cancel();
         executor.shutdownNow();
     }
 }

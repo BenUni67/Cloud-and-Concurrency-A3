@@ -220,6 +220,10 @@ public class VideoPlayerModel {
     public void forwardFiveSeconds() {
         seekRelative(FIVE_SECONDS_US);
     }
+    
+    public long getCurrentTimestampUs() {
+    	return currentTimestampUs;
+    }
 
     public void togglePause() {
         if (!playbackOpen) {
@@ -292,6 +296,8 @@ public class VideoPlayerModel {
         try {
             grabber.setTimestamp(grabTimestampUs);
             resetPlaybackClock(logicalTimestampUs);
+            // update the displayed subtitles
+            updateSubtitleText();
             flushAudioOutput();
             prepareNextFrame();
             notifyPlaybackStateChanged();
