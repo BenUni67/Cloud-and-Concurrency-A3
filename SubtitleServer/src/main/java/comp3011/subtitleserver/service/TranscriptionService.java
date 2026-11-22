@@ -67,7 +67,7 @@ public class TranscriptionService {
         		JsonNode jsonFile = jsonMapper.readTree(response.body());
         		
         		// Track audio length
-        		double seconds = jsonFile.path("usage").path("seconds").asDouble(json.path("duration").asDouble(0));
+        		double seconds = jsonFile.path("usage").path("seconds").asDouble(jsonFile.path("duration").asDouble(0));
         		statsService.addTranscriptionSeconds(seconds);
         		return jsonFile;
         	} catch (Exception e) {
