@@ -165,6 +165,22 @@ public class VideoPlayerController {
 
     private void onStatusChanged(String status) {
         view.setStatus(status);
+        boolean failed = status.startsWith("Error:");
+        boolean stopped = status.equals("Stopped");
+        boolean finished = status.equals("Playback finished");
+
+        if (failed || stopped || finished) {
+            subtitleRequestId++;
+            subtitleClient.cancel();
+            if (failed || stopped) {
+                // prevent further requests for the unavailable video
+                subtitleVideoFile = null;
+                loadedSubtitles.clear();
+                seenSubtitles.clear();
+                model.setSubtitleInstances(List.of());
+                view.showSubtitleText("");
+            }
+        }
     }
 
     private void onPlaybackStateChanged(boolean playing, boolean paused) {

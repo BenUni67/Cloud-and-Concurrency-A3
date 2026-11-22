@@ -11,6 +11,7 @@
 package comp3011;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
@@ -74,6 +75,11 @@ public class VideoPlayerModel {
     private long nextFrameToDisplay = 0;
     private boolean decoderFinished = false;
     private boolean showPaused = false;
+    
+    // USB / media removal logic
+    // Slight assistance from chatGPT as per spec
+    private long lastMediaCheck = 0;
+    private static final long MEDIA_CHECK_INTERVAL = 500_000_000L;
     
     // allows us to identify frames that aren't relevant anymore
     private long playbackGeneration = 0;
@@ -554,6 +560,15 @@ public class VideoPlayerModel {
         if (!playbackOpen) {
             return;
         }
+        
+        // check every 0.5 seconds, including while playback paused
+        if (now - lastMediaCheck >= MEDIA_CHECK_INTERVAL) {
+            lastMediaCheck = now;
+            if (videoFile == null || !videoFile.isFile() || !videoFile.canRead()) {
+                handlePlaybackError(new IOException("Media file is no longer accessible"));
+                return;
+            }
+        }
 
         // Task (1)
         writeDueAudio(now);
@@ -678,6 +693,7 @@ public class VideoPlayerModel {
     private void handlePlaybackError(Exception e) {
         e.printStackTrace();
         closePlaybackResources();
+        notifyFrameReady(null);
         pauseRequested = false;
         notifyStatusChanged("Error: " + e.getMessage());
         notifyPlaybackStateChanged();
@@ -690,6 +706,7 @@ public class VideoPlayerModel {
         preparedFrame = null;
         pendingAudio.clear();
         firstTimestampUs = NO_SEEK_REQUEST;
+        lastMediaCheck = 0;
         playbackStartNs = 0;
         pauseStartedNs = 0;
         audioAvailable = false;
