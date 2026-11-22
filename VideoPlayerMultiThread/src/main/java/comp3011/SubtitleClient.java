@@ -30,14 +30,16 @@ import static org.bytedeco.ffmpeg.global.avcodec.AV_CODEC_ID_PCM_S16LE;
 public class SubtitleClient implements AutoCloseable {
 
     private static final URI SERVER = URI.create("http://localhost:8080/api/v1/subtitles");
-    private static final long CHUNK_DURATION_US = 20_000_000L;
+    private static final long FIRST_CHUNK_DURATION_US = 6_000_000L;
+    private static final long CHUNK_DURATION_US = 15_000_000L;
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
     private final ObjectMapper mapper = new ObjectMapper();
 
     private final ExecutorService executor =
-            Executors.newCachedThreadPool(r -> {
+            Executors.newFixedThreadPool(2, r -> {
                 Thread thread = new Thread(r, "subtitle-client");
                 thread.setDaemon(true);
+                thread.setPriority(Thread.MIN_PRIORITY);
                 return thread;
             });
     private Future<?> runningTask;
@@ -83,6 +85,7 @@ public class SubtitleClient implements AutoCloseable {
             }
 
             long chunkStartUs = 0;
+            boolean firstChunk = true;
             Frame frame;
 
             try {
@@ -99,12 +102,13 @@ public class SubtitleClient implements AutoCloseable {
                     }
                     
                     // a finished chunk is now able to be transcribed
-                    if (recorder != null && timestampUs - chunkStartUs >= CHUNK_DURATION_US) {
+                    if (recorder != null && timestampUs - chunkStartUs >= (firstChunk ? FIRST_CHUNK_DURATION_US : CHUNK_DURATION_US)) {
                         recorder.stop();
                         recorder.close();
                         recorder = null;
 
                         sendChunk(tempFile, chunkStartUs, onInstances, onError);
+                        firstChunk = false;
                         Files.deleteIfExists(tempFile);
                         tempFile = null;
                     }

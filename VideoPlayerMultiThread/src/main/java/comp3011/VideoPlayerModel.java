@@ -52,6 +52,7 @@ public class VideoPlayerModel {
     private static final long NO_SEEK_REQUEST = -1; // Sentinel value used when no seek position is active.
     private static final long FIVE_SECONDS_US = 5_000_000L;
     private static final long AUDIO_LEAD_NS = 30_000_000L;
+    private static final long MAX_AUDIO_LAG_US = 500_000L;
 
     private final List<FrameProcessor> frameProcessors;
     // concurrent hashmap to associate each worker thread with its own list of effects
@@ -95,6 +96,7 @@ public class VideoPlayerModel {
     
     private final Consumer<String> subtitleTextChangedHandler;
     private List<SubtitleInstance> subtitleInstances = List.of();
+    private String lastSubtitleText = null;
 
     // This is the critical wiring that allows the framework (JavaFX) to call
     // into our model logic every time it goes around its event loop. Every GUI
@@ -192,7 +194,10 @@ public class VideoPlayerModel {
             }
         }
 
-        subtitleTextChangedHandler.accept(text);
+        if (!text.equals(lastSubtitleText)) {
+            lastSubtitleText = text;
+            subtitleTextChangedHandler.accept(text);
+        }
     }
 
     // toggles subtitles and returns new state
@@ -204,6 +209,7 @@ public class VideoPlayerModel {
     }
 
     public void play(File file) {
+    	lastSubtitleText = null;
     	subtitleInstances = List.of();
         videoFile = file;
         videoDurationUs = NO_SEEK_REQUEST;
@@ -658,6 +664,16 @@ public class VideoPlayerModel {
 
         // Here is the real time dependent logic
         long dueTimestampUs = firstTimestampUs + (now + AUDIO_LEAD_NS - playbackStartNs) / 1_000L;
+        // discard audio that is already more than 0.5 seconds late
+        boolean droppedAudio = false;
+        while (!pendingAudio.isEmpty() && dueTimestampUs - pendingAudio.peek().timestampUs() > MAX_AUDIO_LAG_US) {
+            pendingAudio.remove();
+            droppedAudio = true;
+        }
+        if (droppedAudio) {
+            audioPlayer.flush();
+        }
+        
         while (!pendingAudio.isEmpty()) {
             PendingAudio audio = pendingAudio.peek();
             if (audio.timestampUs() > dueTimestampUs) {

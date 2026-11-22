@@ -59,6 +59,17 @@ public final class SubtitleFormatter {
             endUs = instance.endUs();
         }
         add(result, startUs, endUs, text);
+        
+        // prevent a subtitle from overlapping the next subtitle
+        for (int i = 0; i < result.size() - 1; i++) {
+            SubtitleInstance current = result.get(i);
+            SubtitleInstance next = result.get(i + 1);
+
+            if (current.endUs() > next.startUs() && next.startUs() > current.startUs()) {
+                result.set(i, new SubtitleInstance(current.startUs(), next.startUs(), current.text()));
+            }
+        }
+        
         return List.copyOf(result);
     }
 
