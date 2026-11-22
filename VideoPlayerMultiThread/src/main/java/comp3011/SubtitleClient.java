@@ -71,7 +71,7 @@ public class SubtitleClient implements AutoCloseable {
         FFmpegFrameRecorder recorder = null;
 
         try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(video)) {
-            grabber.setSampleMode(FrameGrabber.SampleMode.SHORT);
+            grabber.setSampleMode(FrameGrabber.SampleMode.RAW);
             grabber.start();
             
             // move subtitle decoder to the requested playback position

@@ -19,6 +19,8 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.effect.BlurType;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
@@ -32,6 +34,8 @@ import javafx.scene.shape.SVGPath;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.geometry.Pos;
 import javafx.scene.shape.StrokeType;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 
@@ -74,10 +78,10 @@ public class VideoPlayerView {
         // Subtitle appearance configuration
         // This was done with the help of ChatGPT
         subtitleText.setFill(Color.WHITE);
-        subtitleText.setStroke(Color.BLACK);
-        subtitleText.setStrokeWidth(2);
-        subtitleText.setStrokeType(StrokeType.OUTSIDE);
-        subtitleText.setStyle("-fx-font-family: Arial;" + "-fx-font-size: 24px;" + "-fx-font-weight: bold;");
+        subtitleText.setStroke(null);
+        subtitleText.setFont(Font.font("Arial", FontWeight.BOLD, 24));
+        subtitleText.setEffect(new DropShadow(BlurType.GAUSSIAN, Color.BLACK, 3, 0.75, 0, 0));
+        subtitleText.setCache(true);
         subtitleText.setTextAlignment(TextAlignment.CENTER);
         subtitleText.setMouseTransparent(true);
 
