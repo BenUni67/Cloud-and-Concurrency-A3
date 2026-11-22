@@ -96,8 +96,12 @@ public class TranscriptionService {
 
                 + "--" + boundary + "\r\n"
                 + "Content-Disposition: form-data; name=\"timestamp_granularities[]\"\r\n\r\n"
-                + "segment\r\n";
-
+                + "segment\r\n"
+                
+				+ "--" + boundary + "\r\n"
+				+ "Content-Disposition: form-data; name=\"language\"\r\n\r\n"
+				+ "en\r\n";
+                
         String audio = "--" + boundary + "\r\n"
                 + "Content-Disposition: form-data; "
                 + "name=\"file\"; filename=\"audio.wav\"\r\n"
